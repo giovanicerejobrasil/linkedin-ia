@@ -7,8 +7,6 @@ import { Upload, X } from "lucide-react";
 import Image from "next/image";
 import { useState } from "react";
 
-const ACCEPTED_TYPES = ["image/png", "image/jpeg", "image/webp"];
-
 interface UploadPhotoProps {
   onPhotoSelected: (photo: string) => void;
   onContinue: (url: string) => void;
@@ -177,8 +175,11 @@ export function UploadPhoto({
           size="lg"
           className="w-full cursor-pointer"
           onClick={handleGeneratePhoto}
+          disabled={generateMutation.isPending}
         >
-          Gerar foto profissional
+          {generateMutation.isPending
+            ? "Gerando foto..."
+            : "Gerar foto profissional"}
         </Button>
       )}
     </div>

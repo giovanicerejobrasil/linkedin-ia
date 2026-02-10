@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
+export const maxDuration = 60;
+
 const analyzeRequestSchema = z.object({
   imageUrl: z.string().min(1, "URL da imagem é obrigatória"),
   fileName: z.string().optional(),
@@ -35,7 +37,7 @@ export async function POST(request: NextRequest) {
     formData.append("data", blob, fileName);
 
     const n8nWebhookUrl =
-      "https://giovanibrasil.app.n8n.cloud/webhook-test/076d2a73-5763-4465-af0f-47207324ae6a";
+      "https://giovanibrasil.app.n8n.cloud/webhook/076d2a73-5763-4465-af0f-47207324ae6a";
     const n8nResponse = await fetch(n8nWebhookUrl, {
       method: "POST",
       body: formData,
@@ -60,8 +62,8 @@ export async function POST(request: NextRequest) {
         success: true,
         message: "Foto analisada e gerada com sucesso",
         data: {
-          originalImage: "",
-          generatedImage: "",
+          originalImage: imageUrl,
+          ...response,
           fileName,
           fileSize,
           fileType,

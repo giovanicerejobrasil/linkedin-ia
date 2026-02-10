@@ -3,32 +3,42 @@
 import { Button } from "@/components/ui/button";
 import { Upload, X } from "lucide-react";
 import Image from "next/image";
-import { useCallback, useRef, useState } from "react";
+import { useState } from "react";
 
 const ACCEPTED_TYPES = ["image/png", "image/jpeg", "image/webp"];
 
-export function UploadPhoto() {
-  const inputRef = useRef<HTMLInputElement>(null);
-  const [preview, setPreview] = useState<string | null>(null);
+interface UploadPhotoProps {
+  onPhotoSelected: (photo: string) => void;
+  onContinue: (url: string) => void;
+  selectedPhoto: string | null;
+}
+
+export function UploadPhoto({
+  onPhotoSelected,
+  onContinue,
+  selectedPhoto,
+}: UploadPhotoProps) {
   const [isDragging, setIsDragging] = useState(false);
+  const [fileName, setFileName] = useState<string | null>(null);
+  const [fileSize, setFileSize] = useState<number | null>(null);
+  const [fileType, setFileType] = useState<string | null>(null);
 
-  const handleFile = useCallback((file: File | undefined) => {
-    if (!file) return;
-    if (!ACCEPTED_TYPES.includes(file.type)) return;
+  function handleDrop(event: React.DragEvent<HTMLDivElement>) {
+    event.preventDefault();
+    const file = event.dataTransfer.files?.[0];
 
-    const objectUrl = URL.createObjectURL(file);
-    setPreview(objectUrl);
-  }, []);
+    if (file && file.type.startsWith("image/")) {
+      setFileName(file.name);
+      setFileSize(file.size);
+      setFileType(file.type);
 
-  function handleChange(event: React.ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0];
-    handleFile(file);
-  }
-
-  function handleRemove() {
-    setPreview(null);
-    if (inputRef.current) {
-      inputRef.current.value = "";
+      const reader = new FileReader();
+      reader.onload = (event: ProgressEvent<FileReader>) => {
+        if (event.target) {
+          onPhotoSelected(event.target.result as string);
+        }
+      };
+      reader.readAsDataURL(file);
     }
   }
 
@@ -42,11 +52,33 @@ export function UploadPhoto() {
     setIsDragging(false);
   }
 
-  function handleDrop(event: React.DragEvent<HTMLDivElement>) {
-    event.preventDefault();
-    setIsDragging(false);
-    const file = event.dataTransfer.files?.[0];
-    handleFile(file);
+  function handleFileSelect(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+
+    if (file && file.type.startsWith("image/")) {
+      setFileName(file.name);
+      setFileSize(file.size);
+      setFileType(file.type);
+
+      const reader = new FileReader();
+      reader.onload = (event: ProgressEvent<FileReader>) => {
+        if (event.target) {
+          onPhotoSelected(event.target.result as string);
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  }
+
+  const handleGeneratePhoto = () => {
+    console.log("Gerando foto profissional...");
+  };
+
+  function handleRemoveFile() {
+    onPhotoSelected("");
+    setFileName(null);
+    setFileSize(null);
+    setFileType(null);
   }
 
   return (
@@ -61,17 +93,17 @@ export function UploadPhoto() {
       </div>
 
       <div className="w-full">
-        {preview ? (
+        {selectedPhoto ? (
           <div className="relative w-full aspect-square rounded-xl overflow-hidden border border-border">
             <Image
-              src={preview}
+              src={selectedPhoto}
               alt="Preview da foto selecionada"
               fill
               className="object-cover"
             />
             <button
               type="button"
-              onClick={handleRemove}
+              onClick={handleRemoveFile}
               className="absolute top-3 right-3 bg-background/80 backdrop-blur-sm border border-border rounded-full p-1.5 hover:bg-destructive hover:text-white transition-colors cursor-pointer"
               aria-label="Remover foto"
             >
@@ -80,21 +112,15 @@ export function UploadPhoto() {
           </div>
         ) : (
           <div
+            onDrop={handleDrop}
+            onDragLeave={handleDragLeave}
+            onDragOver={handleDragOver}
             role="button"
             tabIndex={0}
-            onClick={() => inputRef.current?.click()}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" || e.key === " ") {
-                inputRef.current?.click();
-              }
-            }}
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-            onDrop={handleDrop}
             className={`
               w-full aspect-square rounded-xl border-2 border-dashed
               flex flex-col items-center justify-center gap-3
-              cursor-pointer transition-colors
+              cursor-pointer transition-colors relative
               ${
                 isDragging
                   ? "border-primary bg-primary/5"
@@ -111,20 +137,23 @@ export function UploadPhoto() {
             <span className="text-xs text-muted-foreground">
               PNG, JPG ou WEBP
             </span>
+
+            <input
+              type="file"
+              accept=".png,.jpg,.jpeg,.webp"
+              onChange={handleFileSelect}
+              className="transparent h-full w-full absolute inset-0 cursor-pointer opacity-0"
+            />
           </div>
         )}
-
-        <input
-          ref={inputRef}
-          type="file"
-          accept=".png,.jpg,.jpeg,.webp"
-          onChange={handleChange}
-          className="hidden"
-        />
       </div>
 
-      {preview && (
-        <Button size="lg" className="w-full">
+      {selectedPhoto && (
+        <Button
+          size="lg"
+          className="w-full cursor-pointer"
+          onClick={handleGeneratePhoto}
+        >
           Gerar foto profissional
         </Button>
       )}

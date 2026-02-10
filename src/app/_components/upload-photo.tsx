@@ -1,6 +1,8 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { generateProfessionalPhoto } from "@/lib/api/analyze";
+import { useMutation } from "@tanstack/react-query";
 import { Upload, X } from "lucide-react";
 import Image from "next/image";
 import { useState } from "react";
@@ -23,6 +25,17 @@ export function UploadPhoto({
   const [fileSize, setFileSize] = useState<number | null>(null);
   const [fileType, setFileType] = useState<string | null>(null);
 
+  const generateMutation = useMutation({
+    mutationFn: generateProfessionalPhoto,
+    onSuccess: (response) => {
+      if (response.data?.generatedImage) {
+        onContinue(response.data?.generatedImage);
+      }
+    },
+    onError: (error) => {
+      console.error("FALHA NA MUTATION: ", error);
+    },
+  });
   function handleDrop(event: React.DragEvent<HTMLDivElement>) {
     event.preventDefault();
     const file = event.dataTransfer.files?.[0];
@@ -70,8 +83,19 @@ export function UploadPhoto({
     }
   }
 
-  const handleGeneratePhoto = () => {
-    console.log("Gerando foto profissional...");
+  const handleGeneratePhoto = async () => {
+    if (!selectedPhoto) return;
+
+    try {
+      await generateMutation.mutateAsync({
+        imageUrl: selectedPhoto!,
+        fileName: fileName!,
+        fileSize: fileSize!,
+        fileType: fileType!,
+      });
+    } catch (error) {
+      console.error("ERRO AO GERAR FOTO: ", error);
+    }
   };
 
   function handleRemoveFile() {
